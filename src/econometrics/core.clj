@@ -1,6 +1,6 @@
 (ns econometrics.core
   (:use clojure.test)
-  (:require [econometrics.stats_spec]
+  (:require [econometrics.stats_test]
             [econometrics.stats :as s])
   (:gen-class))
 

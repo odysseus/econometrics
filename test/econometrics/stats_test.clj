@@ -1,6 +1,5 @@
 (ns econometrics.stats-test
   (:require [clojure.test :refer :all]
-            [econometrics.core :refer :all]
             [econometrics.stats :refer :all]))
 
 (deftest test-square
