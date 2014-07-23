@@ -5,5 +5,4 @@
   (:gen-class))
 
 (defn -main
-  [& args]
-  (run-tests 'econometrics.stats_spec))
+  [& args])
