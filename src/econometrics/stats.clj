@@ -4,6 +4,7 @@
 (defn square [x] (* x x))
 (defn sqrt [n] (Math/sqrt n))
 (defn pow [a b] (Math/pow a b))
+(defn dot-product [xs ys] (map * xs ys))
 
 (defmacro zip
   [& args]
@@ -34,6 +35,36 @@
       fin
       (recur (dec c) (cons (rand-in-range a b) fin)))))
 
+(defn random-sequence-increasing
+  "Calculates a random sequence whose values should trend upwards
+  use a large set or a small range to get the most defined trend"
+  [n r s]
+  (loop [current 0
+         lower 0
+         upper r
+         fin '()]
+    (if (= current n)
+      (reverse fin)
+      (recur (inc current)
+             (+ lower s)
+             (+ upper s)
+             (cons (rand-in-range lower upper) fin)))))
+
+(defn d6
+  "Simulates a d6 dice roll"
+  []
+  (rand-in-range 1 6))
+
+(defn xd6
+  "Returns the total from rolling x d6 dice"
+  [x]
+  (reduce + (take x (repeatedly d6))))
+
+(defn xd6-sequence
+  "Conducts n rolls of x d6 dice and puts the totals into a list"
+  [n x]
+  (take n (repeatedly #(xd6 x))))
+
 (defn mean
   "Average of a sequence"
   ([] nil)
@@ -43,8 +74,8 @@
 (defn median
   "Median value of a sequence"
   ([] nil)
-  ([sq]
-   (let [xs (sort sq)
+  ([xs]
+   (let [xs (sort xs)
          mid (int (/ (count xs) 2))]
    (if (odd? (count xs))
      (float (nth xs mid))
@@ -53,21 +84,21 @@
 (defn range-stat
   "Range between the largest and smallest values in a sequence"
   ([] nil)
-  ([sq]
-   (let [xs (sort sq)]
+  ([xs]
+   (let [xs (sort xs)]
      (float (- (last xs) (first xs))))))
 
 (defn partition-by-values
   "Returns a list partitioned into sublists of distinct values"
   ([] nil)
-  ([sq]
-   (partition-by identity (sort sq))))
+  ([xs]
+   (partition-by identity (sort xs))))
 
 (defn mode
   "Finds the most common value in the set"
   ([] nil)
-  ([sq]
-   (let [xs (partition-by identity (sort sq))]
+  ([xs]
+   (let [xs (partition-by identity (sort xs))]
      (loop [[head & tail :as all] xs
             top '()]
        (if (empty? all)
@@ -78,108 +109,157 @@
 
 (defn abs-errors
   "Finds the absolute values of the error terms"
-  [sq]
-  (let [m (mean sq)]
-    (map #(Math/abs (- % m)) sq)))
+  [xs]
+  (let [m (mean xs)]
+    (map #(Math/abs (- % m)) xs)))
 
 (defn average-abs-error
   "Finds the average of the absolute errors"
-  [sq]
-  (mean (abs-errors sq)))
+  [xs]
+  (mean (abs-errors xs)))
 
 (defn error-terms
   "Finds the raw error terms for each item in the sequence"
-  [sq]
-  (let [mean (mean sq)]
-    (map #(- % mean) sq)))
+  [xs]
+  (let [mean (mean xs)]
+    (map #(- % mean) xs)))
+
+(defn dot-errors
+  "Finds the dot product of the error terms for pairs of xs and ys"
+  [xs ys]
+  (dot-product (error-terms xs) (error-terms ys)))
 
 (defn squared-errors
   "Finds the squared error term for each item in the sequence"
-  [sq]
-  (map square (error-terms sq)))
+  [xs]
+  (map square (error-terms xs)))
 
 (defn sum-squared-errors
   "Finds the sum of squared deviations for a sequence"
-  [sq]
-  (reduce + (squared-errors sq)))
+  [xs]
+  (reduce + (squared-errors xs)))
 
 (defn population-variance
   "Finds the population variance of a sequence"
-  [sq]
-  (/ (sum-squared-errors sq) (count sq)))
+  [xs]
+  (/ (sum-squared-errors xs) (count xs)))
 
 (defn sample-variance
   "Finds the sample variance of a sequence"
-  [sq]
-  (let [n (- (count sq) 1)]
-    (/ (sum-squared-errors sq) n)))
+  [xs]
+  (let [n (- (count xs) 1)]
+    (/ (sum-squared-errors xs) n)))
 
 (defn population-sigma
   "Finds the standard deviation of a sequence using the population formula"
-  [sq]
-  (sqrt (population-variance sq)))
+  [xs]
+  (sqrt (population-variance xs)))
 
 (defn sample-sigma
   "Finds the standard deviation of a sequence using the sample forumla"
-  [sq]
-  (sqrt (sample-variance sq)))
+  [xs]
+  (sqrt (sample-variance xs)))
 
 (defn population-z-scores
   "Returns a sequence of all the z-scores for each item in the sequence.
   Uses the sigma formula for the population"
-  [sq]
-  (let [errors (error-terms sq)
-        sigma (population-sigma sq)]
+  [xs]
+  (let [errors (error-terms xs)
+        sigma (population-sigma xs)]
     (map #(/ % sigma) errors)))
 
 (defn sample-z-scores
   "Returns a sequence of all the z-scores for each item in the sequence.
   Uses the sigma formula for a sample"
-  [sq]
-  (let [errors (error-terms sq)
-        sigma (sample-sigma sq)]
+  [xs]
+  (let [errors (error-terms xs)
+        sigma (sample-sigma xs)]
     (map #(/ % sigma) errors)))
 
 (defn population-z-scores-map
   "Returns a map with the raw score as the key and the z-score as the value"
-  [sq]
-  (let [z-scores (population-z-scores sq)]
+  [xs]
+  (let [z-scores (population-z-scores xs)]
     (loop [fin {}
            n 0]
-      (if (> n (dec (count sq)))
+      (if (> n (dec (count xs)))
         fin
-        (recur (assoc fin (nth sq n) (nth z-scores n)) (inc n))))))
+        (recur (assoc fin (nth xs n) (nth z-scores n)) (inc n))))))
 
 (defn sample-z-scores-map
   "Returns a map with the raw score as the key and the z-score as the value"
-  [sq]
-  (let [z-scores (sample-z-scores sq)]
+  [xs]
+  (let [z-scores (sample-z-scores xs)]
     (loop [fin {}
            n 0]
-      (if (> n (dec (count sq)))
+      (if (> n (dec (count xs)))
         fin
-        (recur (assoc fin (nth sq n) (nth z-scores n)) (inc n))))))
+        (recur (assoc fin (nth xs n) (nth z-scores n)) (inc n))))))
 
 (defn population-mean-std-error
   "Calculating the standard error of the mean for the population"
-  [sq]
-  (/ (population-sigma sq) (sqrt (count sq))))
+  [xs]
+  (/ (population-sigma xs) (sqrt (count xs))))
 
 (defn sample-mean-std-error
   "Calculating the standard error of the mean for a sample"
-  [sq]
-  (/ (sample-sigma sq) (sqrt (count sq))))
+  [xs]
+  (/ (sample-sigma xs) (sqrt (count xs))))
 
-(defn sample-pearson-product-moment-correlation-coefficient
-  "Finds the Pearson product-moment correlation coefficient for a sample"
+(defn population-covariance
+  "Finds the covariance of two sequences with the population formula"
   [xs ys]
-  (/ (reduce + (map * (error-terms xs) (error-terms ys)))
-     (* (sqrt (sum-squared-errors xs)) (sqrt (sum-squared-errors ys)))))
+  (mean (dot-errors xs ys)))
 
-(defn pearson-correlational-coefficient
-  "Pearson correlational coefficient - another formula"
+(defn sample-covariance
+  "Finds the covariance between two sequences using the sample formula"
   [xs ys]
-  (/ (reduce + (map * (population-z-scores xs) (population-z-scores ys)))
-     (if (> (count xs) (count ys))
-       (count xs)
-       (count ys))))
+  (/ (reduce + (dot-errors xs ys))
+     (dec (count xs))))
+
+(defn population-correlation-coefficient
+  "Finds the correlation coefficient for a population"
+  [xs ys]
+  (/ (population-covariance xs ys)
+     (* (population-sigma xs) (population-sigma ys))))
+
+(defn sample-correlation-coeff
+  "Finds the correlation coefficient for a sample"
+  [xs ys]
+  (/ (sample-covariance xs ys)
+     (* (sample-sigma xs) (sample-sigma ys))))
+
+(defn sample-t-value
+  "Finds the t value for a sample"
+  [xs]
+  (let [r (sample-correlation-coeff xs)
+        n (count xs)]
+    (* r (sqrt (/ (- n 2)
+                (- 1 (square r)))))))
+
+(defn coefficient-of-determination
+  "Finds the coefficient of determination between two samples"
+  [xs ys]
+  (square (sample-correlation-coeff xs ys)))
+
+(defn sample-std-err-of-the-mean
+  "Finds the standard error of the mean for a sample"
+  [xs]
+  (/ (sample-sigma xs) (sqrt (count xs))))
+
+(defn std-err-diff-between-means
+  "Finds the std error of the difference between the means for two samples"
+  [xs ys]
+  (sqrt (+ (square (sample-std-err-of-the-mean xs))
+           (square (sample-std-err-of-the-mean ys)))))
+
+(defn independent-sample-t-test
+  "Finds the t-test value for two independent samples of the same length"
+  [xs ys]
+  (/ (- (mean xs) (mean ys)) (std-err-diff-between-means xs ys)))
+
+(def sample-size 10)
+(def xs (xd6-sequence sample-size 5))
+(def ys (xd6-sequence sample-size 5))
+
+(println (independent-sample-t-test xs ys))
