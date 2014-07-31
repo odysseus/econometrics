@@ -305,7 +305,7 @@
           (recur (inc c) (+ tot (* 4 (y c))))
           (recur (inc c) (+ tot (* 2 (y c)))))))))
 
-(defn map-integral
+(defn integral
   "Uses list operations to calculate the integral, runs faster and attains the
   same result as the tail-recursive version of Simpson's method above"
   [f a b n]
@@ -314,21 +314,17 @@
     (float
       (* (/ h 3)
          (+ (y n) (y 0)
-            (reduce +
-                    (rest
-                      (interleave
-                        (map #(* 2 (y %)) (range 0 n 2))
-                        (map #(* 4 (y %)) (range 1 n 2))))))))))
+            (reduce + (map #(* 4 (y %)) (range 1 n 2)))
+            (reduce + (map #(* 2 (y %)) (range 2 n 2))))))))
+
+(defn gamma [n] (reduce * (range (dec n))))
+
+(defn t-distribution [v t]
+  (let [gamma #(reduce * (range 1 %))
+        a (gamma (/ (+ v 1) 2))
+        b (* (sqrt (* v pi)) (gamma (/ v 2)))
+        c (+ 1 (/ (square t) v))
+        d (- (/ (+ v 1) 2))]
+    (* (/ a b) (pow c d))))
 
 ;; Testing
-
-(defn pent [x] (Math/pow x 5))
-(defn quad [x] (Math/pow x 4))
-(defn decay [x] (Math/pow e (- x)))
-
-(println (map-integral identity 0 1 1000))
-(println (map-integral square 0 1 1000))
-(println (map-integral cube 0 1 1000))
-(println (map-integral quad 0 1 1000))
-(println (map-integral pent 0 1 1000))
-(println (map-integral decay 0 1 1000))
