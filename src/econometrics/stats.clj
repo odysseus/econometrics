@@ -1,10 +1,14 @@
 (ns econometrics.stats
   (:require [clojure.core.reducers :as r]))
 
+(def e (Math/E))
+(def pi (Math/PI))
+
 (defn square [x] (* x x))
 (defn sqrt [n] (Math/sqrt n))
 (defn pow [a b] (Math/pow a b))
 (defn dot-product [xs ys] (map * xs ys))
+(defn twinc [x] (+ x 2))
 
 (defmacro zip
   [& args]
@@ -25,6 +29,11 @@
   (if (< a b)
     (+ (rand-int (inc (- b a))) a)
     (+ (rand-int (inc (- a b))) b)))
+
+(defn rand-float-in-range
+  "Generates a random float in the range a to b"
+  [a b]
+  (+ (rand (- b a)) a))
 
 (defn random-sequence
   "Generates a sequence of n random items in the range of a to b"
@@ -308,33 +317,10 @@
             (reduce +
                     (rest
                       (interleave
-                        (map #(* 2 (y %)) (filter even? (range n)))
-                        (map #(* 4 (y %)) (filter odd? (range n)))))))))))
+                        (map #(* 2 (y %)) (range 0 n 2))
+                        (map #(* 4 (y %)) (range 1 n 2))))))))))
 
-(defn rand-float-in-range
-  "Generates a random float in the range a to b"
-  [a b]
-  (+ (rand (- b a)) a))
-
-(defn monte-carlo-integral
-  "Finds an integral using a monte carlo method"
-  [f a b n]
-  (let [xmin a xmax b
-        ymin 0 ymax (f b)
-        randx (fn [] (rand-float-in-range xmin xmax))
-        randy (fn [] (rand-float-in-range ymin ymax))
-        above-curve (fn [x y] (> y (f x)))]
-    (loop [above 0
-           below 0
-           c 0]
-      (if (>= c n)
-        (float (/ below (+ below above)))
-        (if (above-curve (randx) (randy))
-          (recur (inc above) below (inc c))
-          (recur above (inc below) (inc c)))))))
-
-(def e (Math/E))
-(def pi (Math/PI))
+;; Testing
 
 (defn pent [x] (Math/pow x 5))
 (defn quad [x] (Math/pow x 4))
@@ -345,9 +331,4 @@
 (println (map-integral cube 0 1 1000))
 (println (map-integral quad 0 1 1000))
 (println (map-integral pent 0 1 1000))
-(println "")
-(println (monte-carlo-integral identity 0 1 1000000))
-(println (monte-carlo-integral square 0 1 1000000))
-(println (monte-carlo-integral cube 0 1 1000000))
-(println (monte-carlo-integral quad 0 1 1000000))
-(println (monte-carlo-integral pent 0 1 1000000))
+(println (map-integral decay 0 1 1000))
