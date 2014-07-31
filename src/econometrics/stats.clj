@@ -77,9 +77,9 @@
   ([xs]
    (let [xs (sort xs)
          mid (int (/ (count xs) 2))]
-   (if (odd? (count xs))
-     (float (nth xs mid))
-     (float (/ (+ (nth xs (dec mid)) (nth xs mid)) 2))))))
+     (if (odd? (count xs))
+       (float (nth xs mid))
+       (float (/ (+ (nth xs (dec mid)) (nth xs mid)) 2))))))
 
 (defn range-stat
   "Range between the largest and smallest values in a sequence"
@@ -235,7 +235,7 @@
   (let [r (sample-correlation-coeff xs)
         n (count xs)]
     (* r (sqrt (/ (- n 2)
-                (- 1 (square r)))))))
+                  (- 1 (square r)))))))
 
 (defn coefficient-of-determination
   "Finds the coefficient of determination between two samples"
@@ -258,8 +258,96 @@
   [xs ys]
   (/ (- (mean xs) (mean ys)) (std-err-diff-between-means xs ys)))
 
-(def sample-size 10)
-(def xs (xd6-sequence sample-size 5))
-(def ys (xd6-sequence sample-size 5))
+(defn cube
+  "Finds the cubed value of a number"
+  [x]
+  (* x x x))
 
-(println (independent-sample-t-test xs ys))
+(defn fn-range-sum
+  "Takes a range a to b and two functions, f generates the values to be
+  summed and nx generates the next value in the sequence"
+  [f nx a b]
+  (loop [c a
+         tot 0]
+    (if (> c b)
+      tot
+      (recur (nx c) (+ tot (f c))))))
+
+(defn simple-integral
+  "Simple, slow and less accurate method for calculating integrals.
+  This is retained because its simplicity makes it good for checking values
+  against the other integral checking methods below"
+  [f a b dx]
+  (* (fn-range-sum f #(+ % dx) (+ a (/ dx 2.0)) b)
+     dx))
+
+(defn simpsons-rule
+  "Calculates integrals using Simpson's rule, f being the function of the
+  curve, a and b being the range of the integral, and n being an even
+  constant that affects the accuracy (larger n being better)"
+  [f a b n]
+  (let [h (/ (- b a) n)
+        y (fn [k] (f (+ a (* k h))))]
+    (loop [c 1
+           tot (+ (y 0) (y n))]
+      (if (>= c n)
+        (float (* (/ h 3) tot))
+        (if (odd? c)
+          (recur (inc c) (+ tot (* 4 (y c))))
+          (recur (inc c) (+ tot (* 2 (y c)))))))))
+
+(defn map-integral
+  "Uses list operations to calculate the integral, runs faster and attains the
+  same result as the tail-recursive version of Simpson's method above"
+  [f a b n]
+  (let [h (/ (- b a) n)
+        y (fn [k] (f (+ a (* k h))))]
+    (float
+      (* (/ h 3)
+         (+ (y n) (y 0)
+            (reduce +
+                    (rest
+                      (interleave
+                        (map #(* 2 (y %)) (filter even? (range n)))
+                        (map #(* 4 (y %)) (filter odd? (range n)))))))))))
+
+(defn rand-float-in-range
+  "Generates a random float in the range a to b"
+  [a b]
+  (+ (rand (- b a)) a))
+
+(defn monte-carlo-integral
+  "Finds an integral using a monte carlo method"
+  [f a b n]
+  (let [xmin a xmax b
+        ymin 0 ymax (f b)
+        randx (fn [] (rand-float-in-range xmin xmax))
+        randy (fn [] (rand-float-in-range ymin ymax))
+        above-curve (fn [x y] (> y (f x)))]
+    (loop [above 0
+           below 0
+           c 0]
+      (if (>= c n)
+        (float (/ below above))
+        (if (above-curve (randx) (randy))
+          (recur (inc above) below (inc c))
+          (recur above (inc below) (inc c)))))))
+
+(def e (Math/E))
+(def pi (Math/PI))
+
+(defn pent [x] (Math/pow x 5))
+(defn quad [x] (Math/pow x 4))
+(defn decay [x] (Math/pow e (- x)))
+
+(println (map-integral identity 0 1 1000))
+(println (map-integral square 0 1 1000))
+(println (map-integral cube 0 1 1000))
+(println (map-integral quad 0 1 1000))
+(println (map-integral pent 0 1 1000))
+(println "")
+(println (monte-carlo-integral identity 0 1 1000000))
+(println (monte-carlo-integral square 0 1 1000000))
+(println (monte-carlo-integral cube 0 1 1000000))
+(println (monte-carlo-integral quad 0 1 1000000))
+(println (monte-carlo-integral pent 0 1 1000000))
