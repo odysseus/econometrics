@@ -328,7 +328,7 @@
            below 0
            c 0]
       (if (>= c n)
-        (float (/ below above))
+        (float (/ below (+ below above)))
         (if (above-curve (randx) (randy))
           (recur (inc above) below (inc c))
           (recur above (inc below) (inc c)))))))
