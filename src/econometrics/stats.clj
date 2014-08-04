@@ -239,7 +239,7 @@
      (* (sample-sigma xs) (sample-sigma ys))))
 
 (defn sample-t-value
-  "Finds the t value for a sample"
+  "Finds the t value for a single sample"
   [xs]
   (let [r (sample-correlation-coeff xs)
         n (count xs)]
@@ -262,7 +262,7 @@
   (sqrt (+ (square (sample-std-err-of-the-mean xs))
            (square (sample-std-err-of-the-mean ys)))))
 
-(defn independent-sample-t-test
+(defn independent-samples-t-test
   "Finds the t-test value for two independent samples of the same length"
   [xs ys]
   (/ (- (mean xs) (mean ys)) (std-err-diff-between-means xs ys)))
@@ -317,14 +317,39 @@
             (reduce + (map #(* 4 (y %)) (range 1 n 2)))
             (reduce + (map #(* 2 (y %)) (range 2 n 2))))))))
 
-(defn gamma [n] (reduce * (range (dec n))))
+(defn gamma
+  "The gamma function for positive integers"
+  [n]
+  (reduce * (range 1 n)))
 
-(defn t-distribution [v t]
-  (let [gamma #(reduce * (range 1 %))
-        a (gamma (/ (+ v 1) 2))
+(defn beta
+  "The beta function for positive integers"
+  [x y]
+  (/ (* (gamma x) (gamma y))
+     (gamma (+ x y))))
+
+(defn t-distribution-beta
+  [v t]
+  (/ (pow (/ v (+ v (square t))) (/ (+ v 1) 2))
+     (* (sqrt v) (beta (/ v 2) (/ 1 2)))))
+
+(defn t-distribution
+  "Equation for Student's t distribution, f(t) with v degrees of freedom"
+  [v t]
+  (let [a (gamma (/ (+ v 1) 2))
         b (* (sqrt (* v pi)) (gamma (/ v 2)))
         c (+ 1 (/ (square t) v))
         d (- (/ (+ v 1) 2))]
     (* (/ a b) (pow c d))))
 
+(defn normal-distribution
+  "Equation for the normal distribution f(x) with mean mu and std-dev sigma"
+  [mu sigma x]
+  (let [a (* sigma (sqrt (* 2 pi)))
+        b (- (/ (square (- x mu))
+                (* 2 (square sigma))))]
+    (* (/ 1 a) (pow e b))))
+
 ;; Testing
+
+
