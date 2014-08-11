@@ -307,7 +307,9 @@
 
 (defn integral
   "Uses list operations to calculate the integral, runs faster and attains the
-  same result as the tail-recursive version of Simpson's method above"
+  same result as the tail-recursive version of Simpson's method above. f is the
+  function of the curve, a and b are the range of the integral, and n controls
+  the number of samples measured and thus the accuracy of the calculation."
   [f a b n]
   (let [h (/ (- b a) n)
         y (fn [k] (f (+ a (* k h))))]
@@ -317,21 +319,15 @@
             (reduce + (map #(* 4 (y %)) (range 1 n 2)))
             (reduce + (map #(* 2 (y %)) (range 2 n 2))))))))
 
+(defn gamma-curve
+  "The equation for the gamma curve"
+  [n t]
+  (/ (pow t n) (pow e t)))
+
 (defn gamma
-  "The gamma function for positive integers"
+  "The integral version of the gamma function needed for Student's t-distribution"
   [n]
-  (reduce * (range 1 n)))
-
-(defn beta
-  "The beta function for positive integers"
-  [x y]
-  (/ (* (gamma x) (gamma y))
-     (gamma (+ x y))))
-
-(defn t-distribution-beta
-  [v t]
-  (/ (pow (/ v (+ v (square t))) (/ (+ v 1) 2))
-     (* (sqrt v) (beta (/ v 2) (/ 1 2)))))
+  (integral (partial gamma-curve (dec n)) 0 100 100))
 
 (defn t-distribution
   "Equation for Student's t distribution, f(t) with v degrees of freedom"
@@ -350,6 +346,32 @@
                 (* 2 (square sigma))))]
     (* (/ 1 a) (pow e b))))
 
+(defn std-normal-distribution
+  "Creates a curve for the normal distribution with mean 0 and
+  variance/std-dev of 1"
+  [n]
+  (normal-distribution 0 1 n))
+
+(defn one-tailed-p-value-from-z-test
+  "Finds the one tailed p-value given a z test"
+  [z]
+  (integral std-normal-distribution z 10 1000))
+
+(defn two-tailed-p-value-from-z-test
+  "Finds the two tailed p-value given a z-test"
+  [z]
+  (* 2 (one-tailed-p-value-from-z-test z)))
+
+(defn one-tailed-p-value-from-t-test
+  "Finds the one-tailed p-value given a t-test t, and degrees of freedom v"
+  [v t]
+  (integral (partial t-distribution v) t 10 1000))
+
+(defn two-tailed-p-value-from-t-test
+  "Finds the two-tailed p-value given a t-test t, and degrees of freedom v"
+  [v t]
+  (* 2 (one-tailed-p-value-from-t-test v t)))
+
 ;; Testing
-
-
+(println (two-tailed-p-value-from-z-test 2.25))
+(println (two-tailed-p-value-from-t-test 30 2.25))
