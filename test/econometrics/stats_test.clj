@@ -1,5 +1,8 @@
 (ns econometrics.stats-test
   (:require [clojure.test :refer :all]
+            [econometrics.constants :refer :all]
+            [econometrics.integrals :refer :all]
+            [econometrics.curves :refer :all]
             [econometrics.stats :refer :all]))
 
 (deftest test-square

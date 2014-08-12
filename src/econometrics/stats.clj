@@ -1,78 +1,13 @@
 (ns econometrics.stats
-  (:require [clojure.core.reducers :as r]))
-
-(def e (Math/E))
-(def pi (Math/PI))
-
-(defn square [x] (* x x))
-(defn sqrt [n] (Math/sqrt n))
-(defn pow [a b] (Math/pow a b))
-(defn dot-product [xs ys] (map * xs ys))
-(defn twinc [x] (+ x 2))
+  (:require [clojure.core.reducers :as r]
+            [econometrics.constants :refer :all]
+            [econometrics.integrals :refer :all]
+            [econometrics.curves :refer :all]
+            [econometrics.dummy-data :refer :all]))
 
 (defmacro zip
   [& args]
   `(partition ~(count args) (interleave ~@args)))
-
-(defn randn
-  "Generates a random integer in the range 0 to a"
-  [a]
-  (int (* (rand 1) a)))
-
-(defn round [n places]
-  (let [times (pow 10 places)]
-    (/ (Math/round (* n times)) times)))
-
-(defn rand-in-range
-  "Generates a random integer in the range a to b inclusive"
-  [a b]
-  (if (< a b)
-    (+ (rand-int (inc (- b a))) a)
-    (+ (rand-int (inc (- a b))) b)))
-
-(defn rand-float-in-range
-  "Generates a random float in the range a to b"
-  [a b]
-  (+ (rand (- b a)) a))
-
-(defn random-sequence
-  "Generates a sequence of n random items in the range of a to b"
-  [n a b]
-  (loop [c n
-         fin '()]
-    (if (= c 0)
-      fin
-      (recur (dec c) (cons (rand-in-range a b) fin)))))
-
-(defn random-sequence-increasing
-  "Calculates a random sequence whose values should trend upwards
-  use a large set or a small range to get the most defined trend"
-  [n r s]
-  (loop [current 0
-         lower 0
-         upper r
-         fin '()]
-    (if (= current n)
-      (reverse fin)
-      (recur (inc current)
-             (+ lower s)
-             (+ upper s)
-             (cons (rand-in-range lower upper) fin)))))
-
-(defn d6
-  "Simulates a d6 dice roll"
-  []
-  (rand-in-range 1 6))
-
-(defn xd6
-  "Returns the total from rolling x d6 dice"
-  [x]
-  (reduce + (take x (repeatedly d6))))
-
-(defn xd6-sequence
-  "Conducts n rolls of x d6 dice and puts the totals into a list"
-  [n x]
-  (take n (repeatedly #(xd6 x))))
 
 (defn mean
   "Average of a sequence"
@@ -267,90 +202,13 @@
   [xs ys]
   (/ (- (mean xs) (mean ys)) (std-err-diff-between-means xs ys)))
 
-(defn cube
-  "Finds the cubed value of a number"
-  [x]
-  (* x x x))
-
-(defn fn-range-sum
-  "Takes a range a to b and two functions, f generates the values to be
-  summed and nx generates the next value in the sequence"
-  [f nx a b]
-  (loop [c a
-         tot 0]
-    (if (> c b)
-      tot
-      (recur (nx c) (+ tot (f c))))))
-
-(defn simple-integral
-  "Simple, slow and less accurate method for calculating integrals.
-  This is retained because its simplicity makes it good for checking values
-  against the other integral checking methods below"
-  [f a b dx]
-  (* (fn-range-sum f #(+ % dx) (+ a (/ dx 2.0)) b)
-     dx))
-
-(defn simpsons-rule
-  "Calculates integrals using Simpson's rule, f being the function of the
-  curve, a and b being the range of the integral, and n being an even
-  constant that affects the accuracy (larger n being better)"
-  [f a b n]
-  (let [h (/ (- b a) n)
-        y (fn [k] (f (+ a (* k h))))]
-    (loop [c 1
-           tot (+ (y 0) (y n))]
-      (if (>= c n)
-        (float (* (/ h 3) tot))
-        (if (odd? c)
-          (recur (inc c) (+ tot (* 4 (y c))))
-          (recur (inc c) (+ tot (* 2 (y c)))))))))
-
-(defn integral
-  "Uses list operations to calculate the integral, runs faster and attains the
-  same result as the tail-recursive version of Simpson's method above. f is the
-  function of the curve, a and b are the range of the integral, and n controls
-  the number of samples measured and thus the accuracy of the calculation."
-  [f a b n]
-  (let [h (/ (- b a) n)
-        y (fn [k] (f (+ a (* k h))))]
-    (float
-      (* (/ h 3)
-         (+ (y n) (y 0)
-            (reduce + (map #(* 4 (y %)) (range 1 n 2)))
-            (reduce + (map #(* 2 (y %)) (range 2 n 2))))))))
-
-(defn gamma-curve
-  "The equation for the gamma curve"
-  [n t]
-  (/ (pow t n) (pow e t)))
-
-(defn gamma
-  "The integral version of the gamma function needed for Student's t-distribution"
-  [n]
-  (integral (partial gamma-curve (dec n)) 0 100 100))
-
-(defn t-distribution
-  "Equation for Student's t distribution, f(t) with v degrees of freedom"
-  [v t]
-  (let [a (gamma (/ (+ v 1) 2))
-        b (* (sqrt (* v pi)) (gamma (/ v 2)))
-        c (+ 1 (/ (square t) v))
-        d (- (/ (+ v 1) 2))]
-    (* (/ a b) (pow c d))))
-
-(defn normal-distribution
-  "Equation for the normal distribution f(x) with mean mu and std-dev sigma"
-  [mu sigma x]
-  (let [a (* sigma (sqrt (* 2 pi)))
-        b (- (/ (square (- x mu))
-                (* 2 (square sigma))))]
-    (* (/ 1 a) (pow e b))))
-
-(defn std-normal-distribution
-  "Creates a curve for the normal distribution with mean 0 and
-  variance/std-dev of 1"
-  [n]
-  (normal-distribution 0 1 n))
+(defn independent-samples-effect-size
+  "Finds the effect size for an independent samples t-test"
+  [xs ys]
+  (let [s (fn [xs ys] (* (sqrt (count xs))
+                         (std-err-diff-between-means xs ys)))]
+    (/ (- (mean xs) (mean ys))
+       (s xs ys))))
 
 (defn one-tailed-p-value-from-z-test
   "Finds the one tailed p-value given a z test"
@@ -372,6 +230,3 @@
   [v t]
   (* 2 (one-tailed-p-value-from-t-test v t)))
 
-;; Testing
-(println (two-tailed-p-value-from-z-test 2.25))
-(println (two-tailed-p-value-from-t-test 30 2.25))
