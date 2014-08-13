@@ -191,7 +191,7 @@
   [xs]
   (/ (sample-sigma xs) (sqrt (count xs))))
 
-(defn std-err-diff-between-means
+(defn ind-std-err-diff-between-means
   "Finds the std error of the difference between the means for two samples"
   [xs ys]
   (sqrt (+ (square (sample-std-err-of-the-mean xs))
@@ -200,13 +200,13 @@
 (defn independent-samples-t-test
   "Finds the t-test value for two independent samples of the same length"
   [xs ys]
-  (/ (- (mean xs) (mean ys)) (std-err-diff-between-means xs ys)))
+  (/ (- (mean xs) (mean ys)) (ind-std-err-diff-between-means xs ys)))
 
 (defn independent-samples-effect-size
   "Finds the effect size for an independent samples t-test"
   [xs ys]
   (let [s (fn [xs ys] (* (sqrt (count xs))
-                         (std-err-diff-between-means xs ys)))]
+                         (ind-std-err-diff-between-means xs ys)))]
     (/ (- (mean xs) (mean ys))
        (s xs ys))))
 
@@ -230,3 +230,25 @@
   [v t]
   (* 2 (one-tailed-p-value-from-t-test v t)))
 
+(defn differences
+  "Finds the difference between paired values of x and y"
+  [xs ys]
+  (map #(- (first %) (last %)) (partition 2 (interleave xs ys))))
+
+(defn dependent-samples-t-test
+  "Creates a t test value for dependent samples"
+  [xs ys]
+  (let [diff (differences xs ys)
+        sum-diff (reduce + diff)
+        squared-diff (map square diff)
+        sum-squared-diff (reduce + squared-diff)
+        n (count xs)]
+    (/ sum-diff
+       (sqrt (/ (- (* n sum-squared-diff) (square sum-diff))
+                (dec n))))))
+
+(def satisfaction-pre '(49 26 26 51 21 39 62 33 50 30 45 36 45 29 22 51 37 50 41 24 33 60 34 21 35 22 44 26 31 62))
+(def satisfaction-pos '(48 27 22 49 25 37 60 30 55 27 37 33 50 23 27 39 35 53 37 20 32 58 41 17 33 20 44 26 28 59))
+
+(def t (dependent-samples-t-test satisfaction-pre satisfaction-pos))
+(println (two-tailed-p-value-from-t-test 29 t))
