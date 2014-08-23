@@ -1,3 +1,0 @@
-I'm sending up an SOS here :fireworks:. I'm writing an econometrics and statistics library in clojure and need a way to calculate the p-value given a t-test, which I have yet to get working after a lot of effort. If someone has experience with this I would appreciate the assistance.
-
-My understanding is that the p-value requires calculating an integral on the t-distribution curve. I have integrals working and I have the equations that describe the curves of the normal and the t-distributions programmed in. The values for the normal distribution seem to work, however the ones for the t-distribution are definitely off.

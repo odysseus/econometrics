@@ -247,8 +247,21 @@
        (sqrt (/ (- (* n sum-squared-diff) (square sum-diff))
                 (dec n))))))
 
+(defn one-way-anova [& args]
+  (let [sse (reduce + (map sum-squared-errors args))
+        grand-mean (mean (flatten args))
+        dev-score (fn [xs] (* (count xs) (square (- (mean xs) grand-mean))))
+        ssb (/ (reduce + (map dev-score args)) (dec (count args)))]
+    (println ssb)))
+
 (def satisfaction-pre '(49 26 26 51 21 39 62 33 50 30 45 36 45 29 22 51 37 50 41 24 33 60 34 21 35 22 44 26 31 62))
 (def satisfaction-pos '(48 27 22 49 25 37 60 30 55 27 37 33 50 23 27 39 35 53 37 20 32 58 41 17 33 20 44 26 28 59))
 
-(def t (dependent-samples-t-test satisfaction-pre satisfaction-pos))
-(println (two-tailed-p-value-from-t-test 29 t))
+(def i (independent-samples-t-test satisfaction-pre satisfaction-pos))
+(def j (one-way-anova satisfaction-pre satisfaction-pos))
+
+(def a '(6 8 4 5 3 4))
+(def b '(8 12 9 11 6 8))
+(def c '(13 9 11 8 7 12))
+(def d (list a b c))
+(println (one-way-anova a b c))

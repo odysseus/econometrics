@@ -5,6 +5,9 @@
             [econometrics.curves :refer :all]
             [econometrics.stats :refer :all]))
 
+(def satisfaction-pre '(49 26 26 51 21 39 62 33 50 30 45 36 45 29 22 51 37 50 41 24 33 60 34 21 35 22 44 26 31 62))
+(def satisfaction-pos '(48 27 22 49 25 37 60 30 55 27 37 33 50 23 27 39 35 53 37 20 32 58 41 17 33 20 44 26 28 59))
+
 (deftest test-square
   (let [t (square 4)]
     (is (= t 16) "4 squared should be 16")))
