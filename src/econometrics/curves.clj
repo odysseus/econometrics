@@ -25,12 +25,12 @@
     (gamma-whole n)))
 
 (defn t-distribution
-  "Equation for Student's t distribution, f(t) with v degrees of freedom"
-  [v t]
-  (let [a (gamma (/ (+ v 1) 2))
-        b (* (Math/sqrt (* v pi)) (gamma (/ v 2)))
-        c (+ 1 (/ (square t) v))
-        d (- (/ (+ v 1) 2))]
+  "Equation for Student's t distribution, f(t) with k degrees of freedom"
+  [k t]
+  (let [a (gamma (/ (+ k 1) 2))
+        b (* (Math/sqrt (* k pi)) (gamma (/ k 2)))
+        c (+ 1 (/ (square t) k))
+        d (- (/ (+ k 1) 2))]
     (* (/ a b) (Math/pow c d))))
 
 (defn normal-distribution
