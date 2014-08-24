@@ -247,15 +247,20 @@
        (sqrt (/ (- (* n sum-squared-diff) (square sum-diff))
                 (dec n))))))
 
-(defn one-way-anova [& args]
-  (let [n-groups (count args)
-        group-k (dec (count (first args)))
-        sse (/ (reduce + (map sum-squared-errors args))
-               (* n-groups group-k))
-        grand-mean (mean (flatten args))
-        dev-score (fn [xs] (* (count xs) (square (- (mean xs) grand-mean))))
-        ssb (/ (reduce + (map dev-score args)) (dec (count args)))]
-    (/ ssb sse)))
+(defn one-way-anova
+  "Finds the one way analysis of variance (ANOVA) for a
+  variable number of groups."
+  [& args]
+  (let [all (flatten args)
+        n (count all)
+        k (count args)
+        grand-mean (mean all)
+        group-dev #(* (count %) (square (- (mean %) grand-mean)))
+        sse (reduce + (map sum-squared-errors args))
+        ssb (reduce + (map group-dev args))
+        mse (/ sse (- n k))
+        msb (/ ssb (- k 1))]
+    (/ msb mse)))
 
 (def satisfaction-pre '(49 26 26 51 21 39 62 33 50 30 45 36 45 29 22 51 37 50 41 24 33 60 34 21 35 22 44 26 31 62))
 (def satisfaction-pos '(48 27 22 49 25 37 60 30 55 27 37 33 50 23 27 39 35 53 37 20 32 58 41 17 33 20 44 26 28 59))
